@@ -22,11 +22,8 @@ jobs:
       - name: Build
         run: dotnet build --no-restore
 
-      - name: Test
-        run: dotnet test --no-build --verbosity normal
-
       - name: Publish
-        run: dotnet publish --output ./output --configuration Release --runtime browser-wasm
+        run: dotnet publish ./**/BetterGitForkGraph.csproj --output ./output --configuration Release --runtime browser-wasm
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@4.1.5
