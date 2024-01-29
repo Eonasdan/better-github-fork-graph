@@ -1,0 +1,368 @@
+﻿@page "/"
+@using Octokit
+<div class="row">
+    <p class="d-inline-flex gap-1">
+        <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseExample" role="button" aria-expanded="false" aria-controls="collapseExample">
+            Read Me First
+        </a>
+    </p>
+    <div class="collapse" id="collapseExample">
+        <div class="card card-body">
+            <p>
+                I hate using the GitHub network graph. It's too difficult to find any useful changes from other forks. I made this little tool to make it easier. It does this by filtering out forks and commits that have no changes from the base repo.
+            </p>
+            <p>
+                Provide a repo like `owner/repo` (required).
+            </p>
+            <p>
+                You can optionally provide a date that you want to limit commits to. If provided, any commits that occurred before this date will not be requested by the API call.
+            </p>
+            <p>
+                If you select "Use Last Commit Date", then the last commit from the provided repo will be used automatically.
+            </p>
+            <p>
+                If you select "Load All", then the app will get all the forks, branches and commits at one time. Otherwise, it will only load the forks you click on. Note, that in this mode, it won't filter out commits with the same hash. This does take some time, depending on the number of forks there are.
+            </p>
+            <p>
+                Lastly, I know it's weird, but the app usually
+                <a href="https://github.com/settings/tokens?type=beta"
+                   target="_blank"
+                   rel="noopener">
+                    needs a PAT
+                </a>.
+                You can try it without, but it will likely hit the API limit. There isn't a good way to use the OAuth flow without exposing a secret. All this is used for is calling the API. I don't store, or use it for anything else. There's no tracking of any kind. You are welcome to review
+                <a href="https://github.com/Eonasdan/better-github-fork-graph"
+                   target="_blank"
+                   rel="noopener">
+                    the app source code
+                </a>
+                or run it locally if you wish.
+            </p>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-auto">
+        <label class="form-label" for="repoName">
+            Access Token (PAT)
+        </label>
+        <input type="text" @onchange="PATChange" class="form-control" id="pat" placeholder="github_pat_"/>
+    </div>
+    <div class="col-auto">
+        <label class="form-label" for="repoName">
+            Repository (owner/repo)
+        </label>
+        <input type="text" @bind="_repoName" class="form-control" id="repoName" placeholder="Eonasdan/better-github-fork-graph"/>
+    </div>
+    <div class="col-auto">
+        <label class="form-label" for="commitDate">
+            Commit Date Limit
+        </label>
+        <input type="date" @bind="_date" class="form-control" id="commitDate"/>
+    </div>
+    <div class="col-auto">
+        <label class="form-label">&nbsp;<!--padding--></label>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="" id="lastCommit" @bind="_useLastCommit">
+            <label class="form-check-label" for="lastCommit">
+                Use Last Commit Date
+            </label>
+        </div>
+    </div>
+    <div class="col-auto">
+        <label class="form-label">&nbsp;<!--padding--></label>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" value="" id="loadAll" @bind="_loadAll">
+            <label class="form-check-label" for="loadAll">
+                Load All
+            </label>
+        </div>
+    </div>
+    <div class="col-auto">
+        <label class="form-label mt-4">&nbsp;<!--padding--></label>
+        <button @onclick="GetData" disabled="@(!CanGetData)" class="btn btn-primary">
+            @if (_isLoading)
+            {
+                <span>
+                    <i class="fa-solid fa-circle-notch fa-spin"></i> Loading...
+                </span>
+            }
+            else
+            {
+                @("Get Data")
+            }
+        </button>
+    </div>
+</div>
+<div class="row mt-3">
+    @{ var index = 0; }
+    @if (_forks.Any())
+    {
+        <div class="accordion" id="accordionPanelsStayOpenExample">
+            @foreach (var fork in _forks)
+            {
+                var collapseId = $"collapse-{fork.Name}-{index}";
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-controls="@collapseId" @onclick="() => LoadRepoData(fork)">
+                            <span>
+                                <i class="fa-solid fa-code-fork"></i>
+                            </span> @fork.User/@fork.Name
+                        </button>
+                    </h2>
+                    <div id="@collapseId" class="accordion-collapse collapse">
+                        <div class="accordion-body">
+                            @if (fork.HasLoaded)
+                            {
+                                @foreach (var branch in fork.Branches.Where(x => x.Commits.Any()))
+                                {
+                                    <h4>
+                                        <span>
+                                            <i class="fa-solid fa-code-branch"></i>
+                                        </span> @branch.Name
+                                    </h4>
+                                    <ul class="list-group">
+                                        @foreach (var commit in branch.Commits)
+                                        {
+                                            <li class="list-group-item">
+                                                <a href="@commit.Url"
+                                                   target="_blank"
+                                                   rel="noopener">
+                                                    @commit.Message
+                                                </a>
+                                                <br/>
+                                                Date: @commit.Date.ToString("yyyy MMMM dd")
+                                                <br/>
+                                                @if (commit.Stats != null)
+                                                {
+                                                    <div>
+                                                        Change:
+                                                        <span class="text-success"> +@commit.Stats.Additions </span> |
+                                                        <span class="text-danger"> +@commit.Stats.Deletions </span>
+                                                    </div>
+                                                }
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            }
+                            else
+                            {
+                                <span>
+                                    <i class="fa-solid fa-circle-notch fa-spin"></i> Loading...
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </div>
+                index++;
+            }
+
+        </div>
+    }
+</div>
+
+@code{
+    private string _repoName = "";
+    private string _pat = "";
+    private DateTime _date = DateTime.Now.AddMonths(-6);
+    private bool _useLastCommit;
+    private bool _loadAll;
+
+    private List<RepositoryResult> _forks = [];
+    private GitHubClient? _client;
+    private bool _isLoading;
+    private readonly List<string?> _hashes = [];
+
+    protected bool CanGetData => !string.IsNullOrEmpty(_pat) &&
+                                 !string.IsNullOrEmpty(_repoName) &&
+                                 !_isLoading;
+
+    public class RepositoryResult
+    {
+        public string? Name { get; init; }
+        public List<BranchResult> Branches { get; set; } = [];
+        public string? User { get; init; }
+        public bool HasCommits => Branches.Any(x => x.Commits.Any());
+        public bool HasLoaded { get; set; }
+        public long Id { get; init; }
+    }
+
+    public class BranchResult(string name)
+    {
+        public string? Name { get; init; } = name;
+        public List<CommitResult> Commits { get; init; } = [];
+    }
+
+    public class CommitResult
+    {
+        public string? Message { get; init; }
+        public string? Url { get; init; }
+        public string? Sha { get; init; }
+        public DateTime Date { get; init; }
+        public GitHubCommitStats? Stats { get; init; }
+    }
+
+    protected override void OnInitialized()
+    {
+    }
+
+    private void PATChange(ChangeEventArgs e)
+    {
+        var pat = e.Value;
+        if (pat == null)
+        {
+            _pat = string.Empty;
+            _client = null;
+            return;
+        }
+
+        _pat = pat.ToString()!;
+        var tokenAuth = new Credentials(_pat);
+        if (_client == null)
+        {
+            _client = new GitHubClient(new ProductHeaderValue("BetterGitHubForkGraph"))
+            {
+                Credentials = tokenAuth
+            };
+        }
+        else
+        {
+            _client.Credentials = tokenAuth;
+        }
+    }
+
+    private string Truncate(string value, int maxLength = 100)
+    {
+        if (string.IsNullOrEmpty(value)) return value;
+        return value.Length <= maxLength ? value : $"{value[..maxLength]}...";
+    }
+
+    // Get commits from a repository after a given date.
+    private async Task<List<CommitResult>> GetCommitsForRepo(long repositoryId, CommitRequest? commitRequest)
+    {
+        try
+        {
+            if (_client == null) return [];
+            var commits = await _client.Repository.Commit
+                .GetAll(repositoryId, commitRequest);
+
+            if (!commits.Any()) return [];
+
+            var commitsForRepo = commits
+                .Where(x => !_hashes.Contains(x.Sha))
+                .Select(c => new CommitResult
+                {
+                    Message = Truncate(c.Commit.Message),
+                    Url = c.HtmlUrl,
+                    Sha = c.Sha,
+                    Date = c.Commit.Committer.Date.Date,
+                    Stats = c.Stats
+                })
+                .ToList();
+
+            _hashes.AddRange(commitsForRepo.Select(x => x.Sha));
+
+            return commitsForRepo;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return [];
+        }
+    }
+
+    private async Task<IReadOnlyList<Branch>> GetBranches(long repositoryId)
+    {
+        try
+        {
+            if (_client == null) return [];
+            return await _client.Repository.Branch.GetAll(repositoryId);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return [];
+        }
+    }
+
+    private async Task LoadRepoData(RepositoryResult repo)
+    {
+        if (repo.HasLoaded) return;
+
+        var commitRequest = new CommitRequest
+        {
+            Since = _date
+        };
+
+        var branches = await GetBranches(repo.Id);
+        repo.Branches = branches.Select(x => new BranchResult(x.Name)).ToList();
+
+        foreach (var branch in repo.Branches)
+        {
+            commitRequest.Sha = branch.Name;
+            branch.Commits.AddRange(await GetCommitsForRepo(repo.Id, commitRequest));
+        }
+
+        repo.HasLoaded = true;
+    }
+
+    private async Task GetData()
+    {
+        if (_client == null) return;
+        _isLoading = true;
+        _forks.Clear();
+        try
+        {
+            var repoId = _repoName.Split('/');
+
+            var commitRequest = new CommitRequest();
+
+            var baseCommits = await _client.Repository.Commit
+                .GetAll(repoId[0], repoId[1]);
+
+            var last = baseCommits.First().Commit;
+            _hashes.Add(last.Sha);
+
+            if (_useLastCommit)
+            {
+                _date = last.Committer.Date.Date;
+            }
+
+
+            var repos = await _client.Repository.Forks.GetAll(repoId[0], repoId[1]);
+
+            commitRequest.Since = _date;
+
+            foreach (var repo in repos)
+            {
+                var repository = new RepositoryResult
+                {
+                    Id = repo.Id,
+                    Name = repo.Name,
+                    User = repo.Owner.Login
+                };
+
+                if (_loadAll)
+                {
+                    await LoadRepoData(repository);
+                }
+
+                _forks.Add(repository);
+            }
+
+            if (_loadAll)
+            {
+                _forks = _forks.Where(x => x.HasCommits).ToList();
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+
+        _isLoading = false;
+    }
+
+}
