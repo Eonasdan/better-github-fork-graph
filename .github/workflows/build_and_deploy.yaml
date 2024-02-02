@@ -26,6 +26,9 @@ jobs:
 
       - name: Publish
         run: dotnet publish -p:GHPages=true ./**/BetterGitForkGraph.csproj --output ./output --configuration Release --runtime browser-wasm
+      
+      - name: Change base-tag
+        run: sed -i 's/<base href="\/" \/>/<base href="\/${{ github.event.repository.name }}\/" \/>/g' release/wwwroot/index.html
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@4.1.5
