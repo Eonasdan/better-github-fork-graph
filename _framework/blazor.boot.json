@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "BetterGitForkGraph",
   "resources": {
-    "hash": "sha256-SmmywuFmmHBQgLp98AVtlKk1jBm6jLyEiCLkzqJCHw8=",
+    "hash": "sha256-acP6DcrZE9CansTYUj16Dd3/5f6VqEEXy9RvZKhvBG0=",
     "jsModuleNative": {
       "dotnet.native.8.0.1.ahpp78valh.js": "sha256-SGOlISx+3G4kkvpC9Uq3qoPGsnjxGmW61QBev0lyI5U="
     },
@@ -17,7 +17,7 @@
       "icudt_no_CJK.dat": "sha256-L7sV7NEYP37/Qr2FPCePo5cJqRgTXRwGHuwF5Q+0Nfs="
     },
     "assembly": {
-      "BetterGitForkGraph.wasm": "sha256-7AyEOMQmPxS9+Rvd4F5fZYpzCig/t0AO6mw9kiNrtp4=",
+      "BetterGitForkGraph.wasm": "sha256-bVtWntz4X2nkXI3igQyts9Aw2I0Bv+o5cchJY3FZV8M=",
       "Microsoft.AspNetCore.Components.wasm": "sha256-qRs1r9HHsRMwtWMK/8tqI/azVCy2HHGOjXLUd/tIWvQ=",
       "Microsoft.AspNetCore.Components.Web.wasm": "sha256-RNAqR0ff+baVaIhI+uEcLo9eT+pxGnBEvkCzqD+3roM=",
       "Microsoft.AspNetCore.Components.WebAssembly.wasm": "sha256-iH1cBOKl4WQkU7e14AlSAYqgWtpQ6pfNNgXdURDBUxE=",
