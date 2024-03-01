@@ -323,6 +323,8 @@
                 .GetAll(repoId[0], repoId[1]);
 
             var last = baseCommits.First().Commit;
+            //these are all the commit hashes already in the base repo
+            _hashes.AddRange(baseCommits.Select(x => x.Commit.Sha));
             _hashes.Add(last.Sha);
 
             if (_useLastCommit)
